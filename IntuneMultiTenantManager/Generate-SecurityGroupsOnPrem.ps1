@@ -1,12 +1,35 @@
+﻿# Define the path to the CSV file relative to the script's location
+$csvPath = Join-Path -Path $PSScriptRoot -ChildPath "Requirements\applications.csv"
+
+# Import the list of service groups from the CSV file and remove duplicates
+if (Test-Path -Path $csvPath) {
+    $serviceGroupsFromCSV = Import-Csv -Path $csvPath | 
+        Group-Object -Property securityGroupName | 
+        ForEach-Object { $_.Group | Select-Object -First 1 }
+} else {
+    Write-Host "CSV file not found at path $csvPath"
+    exit
+}
+
+# Begin building the new script content
+$newScriptContent = @'
 # Define the list of service groups with their descriptions
-$serviceGroups = @{	"!!_7Zip" = "7-Zip";
-	"!!_AdobeAcrobat" = "Adobe Acrobat";
-	"!!_AutoCAD" = "AutoCAD";
-	"!!_Bluebeam" = "Bluebeam";
-	"!!_GoogleEarthPro" = "Google Earth Pro";
-	"!!_Revit" = "Revit";
-	"!!_RingCentral" = "RingCentral";
-	"!!_SketchUp" = "SketchUp";
+$serviceGroups = @{
+'@
+
+# Track the added groups to avoid duplicates
+$addedGroups = @{}
+
+# Add each service group from the CSV to the script content, ensuring no duplicates
+foreach ($group in $serviceGroupsFromCSV) {
+    if (-not $addedGroups.ContainsKey($group.securityGroupName)) {
+        $newScriptContent += "`t`"$($group.securityGroupName)`" = `"$($group.securityGroupNameDescription)`";`n"
+        $addedGroups[$group.securityGroupName] = $true
+    }
+}
+
+# Complete the script content
+$newScriptContent += @'
 }
 
 # Function to create a new AD group with a description
@@ -51,3 +74,12 @@ try {
     Write-Host "**Error: Unable to find local domain. Please ensure you are connected to a domain and try again.**"
     exit
 }
+'@
+
+# Define the path where the new script will be saved
+$newScriptPath = Join-Path -Path $PSScriptRoot -ChildPath "Create-SecurityGroupsOnPrem.ps1"
+
+# Write the new script content to the file
+Set-Content -Path $newScriptPath -Value $newScriptContent -Force
+
+Write-Host "The script Create-SecurityGroupsOnPrem.ps1 has been generated successfully."

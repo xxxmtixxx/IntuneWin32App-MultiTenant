@@ -25,27 +25,24 @@ function Create-O365Group {
     }
 }
 
-# Prompt for Office 365 credentials with modern authentication
-$credential = Get-Credential
+# Connect to MS Online Service
+Connect-MsolService
 
-# Connect to MS Online Service with the provided credentials
-Connect-MsolService -Credential $credential
+# Define the path to the CSV file relative to the script's location
+$csvPath = Join-Path -Path $PSScriptRoot -ChildPath "Requirements\applications.csv"
 
-# Define the list of service groups with their descriptions
-$serviceGroups = @{
-    "!!_7Zip" = "7-Zip";
-    "!!_AdobeAcrobat" = "Adobe Acrobat";
-    "!!_AutoCAD" = "AutoCAD";
-    "!!_Bluebeam" = "Bluebeam";
-    "!!_GoogleEarthPro" = "Google Earth Pro";
-    "!!_Revit" = "Revit";
-    "!!_RingCentral" = "RingCentral";
-    "!!_SketchUp" = "SketchUp";
+# Check if the CSV file exists before attempting to import
+if (Test-Path -Path $csvPath) {
+    # Import the list of service groups from the CSV file
+    $serviceGroups = Import-Csv -Path $csvPath
+} else {
+    Write-Host "CSV file not found at path $csvPath"
+    exit
 }
 
 # Iterate over the service groups and create them with their descriptions
-foreach ($group in $serviceGroups.Keys) {
-    Create-O365Group -GroupName $group -Description $serviceGroups[$group]
+foreach ($group in $serviceGroups) {
+    Create-O365Group -GroupName $group.securityGroupName -Description $group.securityGroupNameDescription
 }
 
 Write-Host "**All Office 365 groups have been processed.**"

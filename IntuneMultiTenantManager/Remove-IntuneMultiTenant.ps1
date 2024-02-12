@@ -1,18 +1,32 @@
-﻿# Define Win32Apps Folder
+﻿# Initialize the report array
+$report = @()
+
+# Define Win32Apps Folder
 $Win32AppsFolder = "C:\IntuneMultiTenantManager\Win32Apps"
+
+# Check if the Win32Apps Folder exists, create it if it doesn't
+if (-not (Test-Path -Path $Win32AppsFolder)) {
+    New-Item -Path $Win32AppsFolder -ItemType Directory
+    Write-Host "Created folder: $Win32AppsFolder"
+} else {
+    Write-Host "Folder already exists: $Win32AppsFolder"
+}
 
 # Define the CSV file path
 $csvPathCred = Join-Path $PSScriptRoot 'Requirements\credentials.csv'
 $csvPathApps = Join-Path $PSScriptRoot 'Requirements\applications.csv'
+
+# Install the necessary modules
+Install-Module AzureAD
+Install-Module Microsoft.Graph.Authentication
+Install-Module IntuneWin32App
+$documentsPath=[Environment]::GetFolderPath('MyDocuments');$url='https://github.com/xxxmtixxx/IntuneWin32App-MultiTenant/archive/refs/heads/main.zip';$moduleName='IntuneWin32App-MultiTenant';$modulePath=Join-Path $documentsPath 'WindowsPowerShell\Modules';$tempPath=Join-Path $env:TEMP ($moduleName+'.zip');Invoke-WebRequest -Uri $url -OutFile $tempPath;$tempDir='.'+$moduleName+'_temp';$extractPath=Join-Path $HOME $tempDir;Expand-Archive -Path $tempPath -DestinationPath $extractPath -Force;$sourceFolder=Join-Path $extractPath 'IntuneWin32App-MultiTenant-main';$destinationFolder=Join-Path $modulePath $moduleName;if (!(Test-Path $destinationFolder)) {New-Item -Path $destinationFolder -ItemType Directory | Out-Null};Copy-Item -Path "$sourceFolder\*" -Destination $destinationFolder -Recurse -Force
 
 # Import the necessary modules
 Import-Module AzureAD
 Import-Module Microsoft.Graph.Authentication
 Import-Module IntuneWin32App
 Import-Module IntuneWin32App-MultiTenant -DisableNameChecking
-
-# Initialize the report array
-$report = @()
 
 Write-Host ""
 Write-Host "Starting script..."

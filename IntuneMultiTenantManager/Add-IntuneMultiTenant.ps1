@@ -4,6 +4,14 @@ $report = @()
 # Define Win32Apps Folder
 $Win32AppsFolder = "C:\IntuneMultiTenantManager\Win32Apps"
 
+# Check if the Win32Apps Folder exists, create it if it doesn't
+if (-not (Test-Path -Path $Win32AppsFolder)) {
+    New-Item -Path $Win32AppsFolder -ItemType Directory
+    Write-Host "Created folder: $Win32AppsFolder"
+} else {
+    Write-Host "Folder already exists: $Win32AppsFolder"
+}
+
 # Define the CSV file path
 $csvPathCred = Join-Path $PSScriptRoot 'Requirements\credentials.csv'
 $csvPathApps = Join-Path $PSScriptRoot 'Requirements\applications.csv'
