@@ -46,12 +46,12 @@ function Create-ADServiceGroup {
     $groupExists = Get-ADGroup -Filter "Name -eq '$GroupName'" -SearchBase $OUPath -ErrorAction SilentlyContinue
 
     if ($groupExists) {
-        Write-Host "Group $GroupName already exists in $OUPath."
+        Write-Host "Group $GroupName already exists in AD."
     } else {
         try {
             # Create the new group in the specified OU
             New-ADGroup -Name $GroupName -GroupScope Global -Description $Description -Path $OUPath
-            Write-Host "Group $GroupName created successfully with description: '$Description' in $OUPath."
+            Write-Host "Group $GroupName created successfully in AD with description: '$Description'."
         } catch {
             Write-Host "Error creating group ${GroupName}: $_"
         }
@@ -71,7 +71,8 @@ try {
         Create-ADServiceGroup -GroupName $group -Description $serviceGroups[$group] -OUPath $securityGroupsOU
     }
 
-    Write-Host "All service groups have been processed."
+    Write-Host "All AD service groups have been processed. Starting Entra Connect Delta Sync."
+    Start-ADSyncSyncCycle -PolicyType Delta | Out-Null
 } catch {
     Write-Host "Error: Unable to find local domain. Please ensure you are connected to a domain and try again."
     exit

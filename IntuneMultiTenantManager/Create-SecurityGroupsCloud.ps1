@@ -52,4 +52,4 @@ foreach ($group in $uniqueServiceGroups) {
     Create-O365Group -GroupName $group.securityGroupName -Description $group.securityGroupNameDescription | Out-Null
 }
 
-Write-Host "All Office 365 groups have been processed."
+Write-Host "All Office 365 security groups have been processed."
