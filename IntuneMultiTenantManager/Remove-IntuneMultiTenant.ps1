@@ -1,8 +1,8 @@
-﻿# Initialize the report array
-$report = @()
-
-# Define Win32Apps Folder
+﻿# Define Win32Apps Folder
 $Win32AppsFolder = "C:\IntuneMultiTenantManager\Win32Apps"
+
+# Initialize the report array
+$report = @()
 
 # Check if the Win32Apps Folder exists, create it if it doesn't
 if (-not (Test-Path -Path $Win32AppsFolder)) {
@@ -19,12 +19,14 @@ $csvPathApps = Join-Path $PSScriptRoot 'Requirements\applications.csv'
 # Install the necessary modules
 Install-Module AzureAD
 Install-Module Microsoft.Graph.Authentication
+Install-Module Microsoft.Graph.Groups
 Install-Module IntuneWin32App
 $documentsPath=[Environment]::GetFolderPath('MyDocuments');$url='https://github.com/xxxmtixxx/IntuneWin32App-MultiTenant/archive/refs/heads/main.zip';$moduleName='IntuneWin32App-MultiTenant';$modulePath=Join-Path $documentsPath 'WindowsPowerShell\Modules';$tempPath=Join-Path $env:TEMP ($moduleName+'.zip');Invoke-WebRequest -Uri $url -OutFile $tempPath;$tempDir='.'+$moduleName+'_temp';$extractPath=Join-Path $HOME $tempDir;Expand-Archive -Path $tempPath -DestinationPath $extractPath -Force;$sourceFolder=Join-Path $extractPath 'IntuneWin32App-MultiTenant-main';$destinationFolder=Join-Path $modulePath $moduleName;if (!(Test-Path $destinationFolder)) {New-Item -Path $destinationFolder -ItemType Directory | Out-Null};Copy-Item -Path "$sourceFolder\*" -Destination $destinationFolder -Recurse -Force
 
 # Import the necessary modules
 Import-Module AzureAD
 Import-Module Microsoft.Graph.Authentication
+Import-Module Microsoft.Graph.Groups
 Import-Module IntuneWin32App
 Import-Module IntuneWin32App-MultiTenant -DisableNameChecking
 
@@ -41,7 +43,7 @@ Write-Host ""
 $userChoice = Read-Host "Enter your choice (1, 2, or 3)"
 
 # Initialize an empty array to hold the tenants to process
-$tenantsToProcess = @()
+$currentTenant = @()
 
 # Handle the user's choice
 switch ($userChoice) {
@@ -70,7 +72,7 @@ switch ($userChoice) {
         # Retrieve the selected tenant
         $selectedTenant = $existingCredentials[$tenantChoiceIndex - 1]
         if ($selectedTenant) {
-            $tenantsToProcess += $selectedTenant
+            $currentTenant += $selectedTenant
             $certificateThumbprint = $selectedTenant.CertificateThumbprint # Retrieve the certificate thumbprint for the selected tenant
         } else {
             Write-Host "Tenant not found in the CSV file."
@@ -83,7 +85,7 @@ switch ($userChoice) {
         Write-Host ""
         if (Test-Path $csvPathCred) {
             $existingCredentials = Import-Csv -Path $csvPathCred
-            $tenantsToProcess += $existingCredentials
+            $currentTenant += $existingCredentials
         } else {
             Write-Host "CSV file not found."
             exit
@@ -123,7 +125,7 @@ if ($userChoice -eq "1") {
     $app = New-AzureADApplication -DisplayName $appName
 
     # Create a self-signed certificate
-    $certificate = Create-SelfSignedCertificate -certificateName $appName
+    $certificate = Create-SelfSignedCertificate -certificateName $appName -tenantName $tenantName
 
     # Upload the certificate to the Azure AD application
     $certValue = [System.Convert]::ToBase64String($certificate.GetRawCertData())
@@ -209,7 +211,8 @@ if ($userChoice -eq "1") {
         $userConsentResponse = Read-Host "Have you granted admin consent in the browser? (yes/no)"
         if ($userConsentResponse -eq "yes") {
             $userConsentGranted = $true
-            $report += "Tenant $($env.TenantName): SUCCESS - Tennant added."
+            Write-Host "Tenant $($tenantName): SUCCESS - Tennant added."
+            exit
         }
     } while (-not $userConsentGranted)
 }
@@ -247,8 +250,8 @@ if ($selectedApp) {
     exit
 }
 
-# Assuming $tenantsToProcess is populated with the correct credential sets from previous selections
-$intuneEnvironments = $tenantsToProcess
+# Assuming $currentTenant is populated with the correct credential sets from previous selections
+$intuneEnvironments = $currentTenant
 
 foreach ($env in $intuneEnvironments) {
     # Retrieve the certificate from the certificate store
@@ -276,9 +279,11 @@ foreach ($env in $intuneEnvironments) {
     if ($existingApp) {
         Write-Host "Application $DisplayName exists. Proceeding with deletion..."
         Remove-IntuneWin32App -ID $existingApp.id
-        Write-Host "Application $DisplayName has been removed from the tenant."
+        Write-Host "Application $DisplayName has been successfully removed from the tenant: $($env.TenantName)."
+        $report += "Application $DisplayName has been successfully removed from the tenant: $($env.TenantName)."
     } else {
-        Write-Host "Application $DisplayName does not exist in the tenant."
+        Write-Host "Application $DisplayName was not found in the tenant: $($env.TenantName)."
+        $report += "Application $DisplayName was not found in the tenant: $($env.TenantName)."
     }
 }
 
