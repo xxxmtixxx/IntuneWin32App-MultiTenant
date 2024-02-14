@@ -38,7 +38,7 @@ if (Test-Path -Path $csvPath) {
     # Import the list of service groups from the CSV file
     $serviceGroups = Import-Csv -Path $csvPath
 
-    # Create a unique list of groups
+    # Create a unique list of groups from the CSV
     $uniqueServiceGroups = $serviceGroups | 
         Group-Object -Property securityGroupName | 
         ForEach-Object { $_.Group | Select-Object -First 1 }
@@ -47,8 +47,33 @@ if (Test-Path -Path $csvPath) {
     exit
 }
 
-# Iterate over the unique service groups and create them with their descriptions
-foreach ($group in $uniqueServiceGroups) {
+# Define static groups and their descriptions with corrected property names
+$staticGroups = @(
+    @{securityGroupName="!!!_M365_Business_Premium"; securityGroupNameDescription="M365 Business Premium"},
+    @{securityGroupName="!!!_Microsoft_365_E5"; securityGroupNameDescription="Microsoft 365 E5"},
+    @{securityGroupName="!!!_Microsoft_365_E3"; securityGroupNameDescription="Microsoft 365 E3"},
+    @{securityGroupName="!!!_Office_365_E3"; securityGroupNameDescription="Office 365 E3"},
+    @{securityGroupName="!!!_Microsoft_365_Audio_Conferencing"; securityGroupNameDescription="Microsoft 365 Audio Conferencing"},
+    @{securityGroupName="!!!_Microsoft_Teams_Phone_Standard"; securityGroupNameDescription="Microsoft Teams Phone Standard"},
+    @{securityGroupName="!!!_Project_Plan_3"; securityGroupNameDescription="Project Plan 3"},
+    @{securityGroupName="!!!_Project_Plan_5"; securityGroupNameDescription="Project Plan 5"},
+    @{securityGroupName="!!!_Visio_Plan_1"; securityGroupNameDescription="Visio Plan 1"},
+    @{securityGroupName="!!!_Visio_Plan_2"; securityGroupNameDescription="Visio Plan 2"}
+)
+
+# Convert static groups to objects with corrected property names
+$staticGroupObjects = $staticGroups | ForEach-Object { 
+    New-Object PSObject -Property @{
+        securityGroupName = $_.securityGroupName
+        securityGroupNameDescription = $_.securityGroupNameDescription
+    }
+}
+
+# Combine static groups with the unique groups from the CSV
+$allGroupsToProcess = $uniqueServiceGroups + $staticGroupObjects
+
+# Iterate over the combined list of unique service groups and create them
+foreach ($group in $allGroupsToProcess) {
     Create-O365Group -GroupName $group.securityGroupName -Description $group.securityGroupNameDescription | Out-Null
 }
 

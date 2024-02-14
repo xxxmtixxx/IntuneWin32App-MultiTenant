@@ -7,6 +7,16 @@ $serviceGroups = @{	"!!_7Zip" = "7-Zip";
 	"!!_Revit" = "Revit";
 	"!!_RingCentral" = "RingCentral";
 	"!!_SketchUp" = "SketchUp";
+	"!!!_Microsoft_Teams_Phone_Standard" = "Microsoft Teams Phone Standard";
+	"!!!_Visio_Plan_1" = "Visio Plan 1";
+	"!!!_Microsoft_365_E3" = "Microsoft 365 E3";
+	"!!!_M365_Business_Premium" = "M365 Business Premium";
+	"!!!_Microsoft_365_E5" = "Microsoft 365 E5";
+	"!!!_Office_365_E3" = "Office 365 E3";
+	"!!!_Microsoft_365_Audio_Conferencing" = "Microsoft 365 Audio Conferencing";
+	"!!!_Visio_Plan_2" = "Visio Plan 2";
+	"!!!_Project_Plan_3" = "Project Plan 3";
+	"!!!_Project_Plan_5" = "Project Plan 5";
 }
 
 # Function to create a new AD group with a description
@@ -39,7 +49,7 @@ try {
     Write-Host ""
     
     # Construct the distinguished name for the Security Groups OU
-    $securityGroupsOU = "OU=Security Groups,$($localDomain.DistinguishedName)"
+    $securityGroupsOU = "OU=Security Groups Sync,$($localDomain.DistinguishedName)"
 
     # Iterate over the service groups and create them with their descriptions in the Security Groups OU
     foreach ($group in $serviceGroups.Keys) {
